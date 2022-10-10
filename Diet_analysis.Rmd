@@ -1,0 +1,96 @@
+---
+title: "Diet_script"
+author: "TR"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r data exploration}
+library(ggplot2)
+library(tidyverse)
+Iso <- read.delim(file = "2021-02 Boddenhecht Timo Rittweg TG.txt", header = TRUE, stringsAsFactors = FALSE)
+Isopike <- read.delim("MuscleSamples_01-10-21_NCS.txt", header = T, stringsAsFactors = F)
+
+Iso <- Iso %>% filter(ID1 != "Eyelens" & ID1 != "Muscle") %>% group_by(ID2) %>%
+  summarise(ID1 = ID1,
+            N = mean(d15N..permil.N2.atm.),
+            C = mean(d13C..permil.VPDB.),
+            S = mean(d34S..permil.CDT.))%>%
+  ungroup()%>%
+  transmute(ID = ID1,
+            N = N,
+            C = C,
+            S = S)%>%
+  distinct()
+
+Isopike <- Isopike %>% group_by(Identifier.1) %>%
+  summarise(ID = Identifier.1,
+            N = mean(d.15N.14N.Corrected),
+            C = mean(d.13C.12C.Corrected),
+            S = mean(d.34S.Corrected))%>%
+  ungroup()%>%
+  transmute(ID = ID,
+            N = N,
+            C = C,
+            S = S)%>%
+  distinct()
+
+Isopike$ID <- "Pike"
+
+Isototal <- rbind(Iso, Isopike) %>%
+  filter(ID != "Perch" & ID != "Pikeperch" & ID != "Round goby" & ID != "Tench" & ID != "Vimba bream")
+
+ggplot(Isototal, aes(N, S, color = ID)) + geom_point()+
+  stat_ellipse(aes(fill = ID, color = ID), alpha = 0.2, level = 0.95, type = "norm", geom = "polygon")+
+  theme(panel.background = element_blank(), panel.grid.major = element_line(colour = "grey", size = 0.5),
+        axis.line = element_line(size = 1, colour = "black", linetype = 1), axis.title.y = element_text(size = 15),
+        axis.ticks= element_line(size = 2), axis.text.y = element_text(size = 15, colour = "black"),
+        axis.text.x = element_text(size = 15, colour = "black"), axis.ticks.x = element_line(size = 2), 
+        axis.title.x = element_text(size = 15, colour = "black"))+
+  xlab(expression(atop(delta^15*"N"~("\211 N atm")))) + ylab(expression(atop(delta^34*"S"~("\211 CDT"))))
+
+ggplot(Isototal, aes(N, C, color = ID)) + geom_point()+
+  stat_ellipse(aes(fill = ID, color = ID), alpha = 0.2, level = 0.95, type = "norm", geom = "polygon")+
+  theme(panel.background = element_blank(), panel.grid.major = element_line(colour = "grey", size = 0.5),
+        axis.line = element_line(size = 1, colour = "black", linetype = 1), axis.title.y = element_text(size = 15),
+        axis.ticks= element_line(size = 2), axis.text.y = element_text(size = 15, colour = "black"),
+        axis.text.x = element_text(size = 15, colour = "black"), axis.ticks.x = element_line(size = 2), 
+        axis.title.x = element_text(size = 15, colour = "black"))+
+  xlab(expression(atop(delta^15*"N"~("\211 N atm")))) + ylab(expression(atop(delta^13*"C"~("\211 VPDB"))))
+
+ggplot(Isototal, aes(C, S, color = ID)) + geom_point()+
+stat_ellipse(aes(fill = ID, color = ID), alpha = 0.2, level = 0.95, type = "norm", geom = "polygon")+
+  theme(panel.background = element_blank(), panel.grid.major = element_line(colour = "grey", size = 0.5),
+        axis.line = element_line(size = 1, colour = "black", linetype = 1), axis.title.y = element_text(size = 15),
+        axis.ticks= element_line(size = 2), axis.text.y = element_text(size = 15, colour = "black"),
+        axis.text.x = element_text(size = 15, colour = "black"), axis.ticks.x = element_line(size = 2), 
+        axis.title.x = element_text(size = 15, colour = "black"))+
+  xlab(expression(atop(delta^13*"C"~("\211 VPDB")))) + ylab(expression(atop(delta^34*"S"~("\211 CDT"))))
+
+
+Isoplot + geom_point(aes(color = ID1, shape = X), size = 2.2) + theme_minimal() + labs(x = "d13C", y = "d34S") + 
+  labs(color = "Species", shape = "Area")
+
+Isoplot <- ggplot() + geom_point(Iso, aes(d13))
+
+C_N_ratio = Iso[Iso$ID1 == "Round goby",]$weight.C/Iso[Iso$ID1 == "Round goby",]$weight.N
+mean(C_N_ratio)
+
+
+
+Eyeplot <- ggplot(Iso[Iso$ID1 == "Eyelens",], aes(d15N..permil.N2.atm., d13C..permil.VPDB.), 
+                  fill = ID2)
+Eyeplot + geom_point(aes(color = ID2), size = 2.2) + theme_minimal() + labs(x = "d15N", y = "d13C")+
+  labs(color = "Lens lamina", shape = "Area")
+
+Eyeplot2 <- ggplot(Iso[Iso$ID1 == "Eyelens",], aes(d15N..permil.N2.atm., d34S..permil.CDT.), 
+                  fill = ID2)
+Eyeplot2 + geom_point(aes(color = ID2), size = 2.2) + theme_minimal() + labs(x = "d15N", y = "d34S") + 
+  labs(color = "Lens lamina", shape = "Area")
+
+```
+
